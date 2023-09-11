@@ -4,28 +4,40 @@
 
 @layer base {
   h1 {
-    @apply text-5xl;
-    @apply font-bold;
+    @apply text-5xl font-bold;
   }
   h2 {
-    @apply text-4xl;
-    @apply font-bold;
+    @apply text-4xl font-bold;
   }
   h3 {
-    @apply text-3xl;
-    @apply font-bold;
+    @apply text-3xl font-bold;
   }
   h4 {
-    @apply text-2xl;
-    @apply font-bold;
+    @apply text-2xl font-bold;
   }
   h5 {
-    @apply text-xl;
-    @apply font-bold;
+    @apply text-xl font-bold;
   }
   h6 {
-    @apply text-lg;
-    @apply font-bold;
+    @apply text-lg font-bold;
+  }
+  blockquote {
+    @apply px-6 py-4 border-l-8 bg-gray-50 border-gray-300 min-w-fit;
+  }
+  ol {
+    @apply list-decimal list-inside px-10;
+  }
+  ul {
+    @apply list-disc list-inside px-10;
+  }
+  pre {
+    @apply font-mono bg-gray-50 px-6 py-4 min-w-fit;
+  }
+  a {
+    @apply text-blue-500;
+  }
+  a:hover {
+    @apply text-blue-700;
   }
 }
 
