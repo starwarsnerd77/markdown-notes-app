@@ -110,7 +110,7 @@ export const Editor = () => {
     return (
         <div className='flex flex-row'>
             <div className='w-1/5 hidden md:block border-r-gray-100 border-r-2'>
-                <h3 className='font-normal mt-3'>Projects</h3>
+                <h3 className='font-normal mt-3'>Notes</h3>
                 {notes.map((note, index) => (
                     <div key={index} onClick={() => {
                         setTitle(note.title);
