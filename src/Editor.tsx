@@ -123,7 +123,10 @@ export const Editor = () => {
                 ))}
             </div>
             <div className='m-0 flex flex-col content-start text-left h-screen w-full justify-center'>
-                <div className='flex flex-row flex-wrap justify-end mb-2 items-center'>
+                <div className='flex flex-row flex-wrap justify-between mb-2 items-center'>
+                    <button onClick={async () => {setTitle('Untitled'); setText(''); setCurrentDocId('');}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded'>
+                        New Note
+                    </button>
                     <div className='inline-flex justify-center'>
                         <button onClick={async () => {handleSave()}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
                             Save
