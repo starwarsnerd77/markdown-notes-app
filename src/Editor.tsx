@@ -3,6 +3,7 @@ import Markdown from 'marked-react';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc, getDocs, query, where, setDoc, doc } from "firebase/firestore"; 
+import './Editor.css';
 
 type SavedDocs = {
     uid: number,
@@ -16,6 +17,7 @@ export const Editor = () => {
     const [viewMode, setViewMode] = useState('split');
     const [title, setTitle] = useState('Untitled');
     const [notes, setNotes] = useState<SavedDocs[]>([])
+    const [edit, setEdit] = useState(false);
     const [currentDocId, setCurrentDocId] = useState('');
     const user = auth.currentUser;
 
@@ -109,24 +111,32 @@ export const Editor = () => {
 
     return (
         <div className='flex flex-row'>
-            <div className='w-1/5 hidden md:block border-r-gray-100 border-r-2'>
+
+            <div hidden={edit} className='w-full h-screen lg:w-1/5 lg:block relative border-r-gray-100 border-r-2'>
                 <h3 className='font-normal mt-3'>Notes</h3>
                 {notes.map((note, index) => (
                     <div key={index} onClick={() => {
                         setTitle(note.title);
                         setText(note.note);
                         setCurrentDocId(note.did);
-                    }} className='text-left cursor-pointer'>
-                        <p className='p-3'>{note.title}</p>
+                        setEdit(true);
+                    }} className='text-left cursor-pointer '>
+                        <div className='w-full p-3 relative overflow-hidden'>
+                            <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'>{note.title}</p>
+                        </div>
                         <hr/>
                     </div>
                 ))}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" onClick={async () => {setTitle('Untitled'); setText(''); setCurrentDocId(''); setEdit(true);}} className="w-14 h-14 hover:cursor-pointer bg-slate-400 stroke-white rounded-xl float-right absolute bottom-5 right-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
             </div>
-            <div className='m-0 flex flex-col content-start text-left h-screen w-full justify-center'>
-                <div className='flex flex-row flex-wrap justify-between mb-2 items-center'>
-                    <button onClick={async () => {setTitle('Untitled'); setText(''); setCurrentDocId('');}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded'>
-                        New Note
-                    </button>
+            <div className={'m-0 lg:flex flex-col content-start text-left h-screen w-full justify-center' + (!edit ? ' hidden' : '')}>
+                <div className='flex flex-row flex-wrap lg:justify-end justify-between mb-2 items-center'>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" onClick={() => setEdit(false)} className="w-8 h-8 lg:hidden">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+
                     <div className='inline-flex justify-center'>
                         <button onClick={async () => {handleSave()}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
                             Save
@@ -137,7 +147,7 @@ export const Editor = () => {
                     </div>
                 </div>
                 {view}
-                <div className='inline-flex justify-center mt-5'>
+                <div className='inline-flex w-full justify-center mt-5'>
                     <button onClick={() => setViewMode('markdown')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'>
                         Markdown
                     </button>
