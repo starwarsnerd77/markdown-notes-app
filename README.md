@@ -68,4 +68,7 @@ Go to http://localhost:5173
 
 ## Coming Soon
 
-Encrypt the notes that are saved in Cloud Firestore.
+* Sign-in with Google
+* Folders
+* Host on Firebase
+* User Settings
