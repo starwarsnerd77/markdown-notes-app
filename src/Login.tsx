@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
 import { useState } from "react"
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
@@ -56,7 +56,7 @@ export const Login = () => {
                         <div className="flex items-center justify-between">
                             <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">Password</label>
                             <div className="text-sm">
-                                <a href="#" className="font-semibold text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+                                <a onClick={() => navigate('/reset')} className="font-semibold text-indigo-600 hover:text-indigo-500 hover:cursor-pointer">Forgot password?</a>
                             </div>
                         </div>
                         <div className="mt-2">

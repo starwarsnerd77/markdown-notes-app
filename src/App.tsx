@@ -5,7 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Layout } from './Layout';
 import { ErrorPage } from './ErrorPage';
 import { Login } from './Login';
-
+import { ResetPassword } from './ResetPassword';
 
 const router = createBrowserRouter([
   {
@@ -25,10 +25,10 @@ const router = createBrowserRouter([
         path: "/editor",
         element: <Editor />
       },
-      // {
-      //   path: "/reset",
-      //   element: <ResetPassword />
-      // }
+      {
+        path: "/reset",
+        element: <ResetPassword />
+      }
     ]
   },
 ]);
