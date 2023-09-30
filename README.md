@@ -68,7 +68,6 @@ Go to http://localhost:5173
 
 ## Coming Soon
 
-* Sign-in with Google
 * Folders
 * Host on Firebase
 * User Settings
