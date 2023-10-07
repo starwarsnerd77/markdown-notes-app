@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
 import { useState } from "react"
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
