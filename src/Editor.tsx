@@ -5,6 +5,7 @@ import { auth, db } from '../lib/firebase';
 import { collection, addDoc, getDocs, query, where, setDoc, doc } from "firebase/firestore"; 
 import './Editor.css';
 import { NewFolderModal } from './NewFolderModal';
+import { IconFolder, IconNote } from '@tabler/icons-react';
 
 type SavedDocs = {
     did: string,
@@ -181,8 +182,9 @@ export const Editor = () => {
                     <h3 className='font-normal mt-3'>Notes</h3>
                     {folders.map((folder, index) => (
                         <div key={index} className='text-left cursor-pointer '>
-                            <div className='w-full p-3 relative overflow-hidden'>
-                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'>{folder}</p>
+                            <div className='w-full p-3 relative overflow-hidden flex'>
+                                <IconFolder />
+                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{folder}</p>
                             </div>
                             <hr/>
                         </div>
@@ -194,8 +196,9 @@ export const Editor = () => {
                             setCurrentDocId(note.did);
                             setEdit(true);
                         }} className='text-left cursor-pointer '>
-                            <div className='w-full p-3 relative overflow-hidden'>
-                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'>{note.title}</p>
+                            <div className='w-full p-3 relative overflow-hidden flex'>
+                                <IconNote />
+                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{note.title}</p>
                             </div>
                             <hr/>
                         </div>
