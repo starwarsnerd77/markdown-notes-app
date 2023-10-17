@@ -7,7 +7,7 @@ import './Editor.css';
 import { NewFolderModal } from './NewFolderModal';
 import { IconFolder, IconNote } from '@tabler/icons-react';
 
-type Docs = {
+type Doc = {
     did: string,
     title: string,
     note: string,
@@ -15,12 +15,8 @@ type Docs = {
 
 interface Folder {
     name: string,
-    folders: Folder[] | null,
-    docs: Docs | null,
-}
-
-interface Directory {
-    directory: Folder[],
+    folders: Folder[],
+    docs: Doc[],
 }
 
 interface ViewItemType {
@@ -40,12 +36,12 @@ export const Editor = () => {
     const [viewModeClassesTextarea, setViewModeClassesTextarea] = useState('w-1/2');
     const [viewModeClassesMarkdown, setViewModeClassesMarkdown] = useState('w-1/2 p-2 border-l-2');
     const [title, setTitle] = useState('Untitled');
-    const [notes, setNotes] = useState<Docs[]>([])
+    const [notes, setNotes] = useState<Doc[]>([])
     const [edit, setEdit] = useState(false);
     const [currentDocId, setCurrentDocId] = useState('');
     const [add, setAdd] = useState(false);
     const [createNewFolder, setCreateNewFolder] = useState(false);
-    const [folders, setFolders] = useState<Directory | null>();
+    const [folders, setFolders] = useState<Folder[]>([]);
 
     const user = auth.currentUser;
 
@@ -105,8 +101,8 @@ export const Editor = () => {
 
         const newFolder: Folder = {
             name: newFolderName,
-            folders: null,
-            docs: null,
+            folders: [],
+            docs: [],
         }
         try {
             if (user) {
@@ -115,9 +111,9 @@ export const Editor = () => {
                     note: '# placeholder',
                     type: 'placeholder'
                 });
-                if (folders?.directory) {
+                if (folders) {
                     await setDoc(doc(db, 'notes - ' + user.uid, 'folders'), {
-                        directory: [...folders?.directory, newFolder],
+                        directory: [...folders, newFolder],
                         note: '# directory',
                         title: 'You shouldn\'t be able to see this :(',
                         type: 'directory'
@@ -150,7 +146,7 @@ export const Editor = () => {
         const querySnapshot = await getDocs(q);
 
         querySnapshot.forEach((doc) => {
-            const note: Docs = {
+            const note: Doc = {
                 did: doc.id,
                 title: doc.data().title,
                 note: doc.data().note,
@@ -162,7 +158,7 @@ export const Editor = () => {
     }
 
     const getSavedFolders = async () => {
-        setFolders(null);
+        setFolders([]);
 
         const q = query(
             collection(db, 'notes - ' + user?.uid),
@@ -172,20 +168,10 @@ export const Editor = () => {
         const querySnapshot = await getDocs(q);
 
         querySnapshot.forEach((doc) => {
-            const newDirectory: Directory = {
-                directory: [],
-            }
 
-            doc.data().directory.map((folder: string) => {
-                const newFolder: Folder = {
-                    name: folder,
-                    folders: null,
-                    docs: null,
-                }
-
-                newDirectory.directory = [...newDirectory.directory, newFolder];
-            })
-            setFolders(newDirectory);
+            const directory: Folder[] = doc.data().directory;
+            
+            setFolders(directory);
         })
     }
 
@@ -205,7 +191,7 @@ export const Editor = () => {
             <div className='flex flex-row'>
                 <div hidden={edit} className='w-full h-screen lg:w-1/5 lg:block relative border-r-gray-100 border-r-2'>
                     <h3 className='font-normal mt-3'>Notes</h3>
-                    {folders?.directory.map((folder, index) => (
+                    {folders.map((folder, index) => (
                         <div key={index} className='text-left cursor-pointer '>
                             <div className='w-full p-3 relative overflow-hidden flex'>
                                 <IconFolder />
@@ -220,7 +206,7 @@ export const Editor = () => {
                             setText(note.note);
                             setCurrentDocId(note.did);
                             setEdit(true);
-                        }} className='text-left cursor-pointer '>
+                        }} className='text-left cursor-pointer'>
                             <div className='w-full p-3 relative overflow-hidden flex'>
                                 <IconNote />
                                 <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{note.title}</p>
