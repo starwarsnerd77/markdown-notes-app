@@ -17,55 +17,53 @@ type Folders = {
     directory: string[]
 }
 
+interface ViewItemType {
+    textarea: string,
+    markdown: string,
+}
+
+interface ViewType {
+    split: ViewItemType,
+    markdown: ViewItemType,
+    html: ViewItemType,
+}
+
 export const Editor = () => {
     const [text, setText] = useState('');
-    const [viewMode, setViewMode] = useState('split');
+    const [viewMode, setViewMode] = useState<string>('split');
+    const [viewModeClassesTextarea, setViewModeClassesTextarea] = useState('w-1/2');
+    const [viewModeClassesMarkdown, setViewModeClassesMarkdown] = useState('w-1/2 p-2 border-l-2');
     const [title, setTitle] = useState('Untitled');
     const [notes, setNotes] = useState<SavedDocs[]>([])
     const [edit, setEdit] = useState(false);
     const [currentDocId, setCurrentDocId] = useState('');
     const [add, setAdd] = useState(false);
     const [createNewFolder, setCreateNewFolder] = useState(false);
-    // const [newFolderName, setNewFolderName] = useState('');
     const [folders, setFolders] = useState<string[]>([]);
 
     const user = auth.currentUser;
 
+    useEffect(() => {
+        const view: ViewType = {
+            split: {
+                'textarea': 'w-1/2',
+                'markdown': 'w-1/2 p-2 border-l-2',
+            },
+            markdown: {
+                'textarea': 'w-full',
+                'markdown': 'invisible absolute',
+            },
+            html: {
+                'textarea': 'invisible absolute',
+                'markdown': 'w-full p-2',
+            },
+        }
 
-    let view;
-    if (viewMode === 'split') {
-        view = (
-            <div className='flex flex-row h-5/6 w-full'>
-                <textarea placeholder='Type here...' className='editor font-mono border-none focus:outline-none focus:ring-0 h-full w-1/2 resize-none p-2' wrap="hard" value={text} onChange={(e) => {
-                    setText(e.target.value);
-                    const newTitle = e.target.value.split('\n', 1)[0]
-                    setTitle(newTitle.substring(0, 1) === '#' ? newTitle.substring(1).trim() : newTitle.trim());
-                }}/>
-                <div className='w-1/2 h-full overflow-y-scroll p-2 border-l-2'>
-                    <Markdown value={text} gfm/>
-                </div>
-            </div>
-        );
-    } else if (viewMode === 'markdown') {
-        view = (
-            <div className='flex flex-row h-5/6 w-full'>
-                <textarea placeholder='Type here...' className='editor font-mono border-none focus:outline-none focus:ring-0 h-full w-full resize-none p-2' wrap="hard" value={text} onChange={(e) => {
-                    setText(e.target.value);
-                    const newTitle = e.target.value.split('\n', 1)[0]
-                    setTitle(newTitle.substring(0, 1) === '#' ? newTitle.substring(1).trim() : newTitle.trim());
-                }} />
-            </div>
-        );
-    } else if (viewMode === 'html') {
-        view = (
-            <div className='flex flex-row h-5/6 w-full'>
-                <div className='w-full h-full overflow-y-scroll'>
-                    <Markdown value={text} gfm/>
-                </div>
-            </div>
-        );
-    }
+        setViewModeClassesTextarea(view[viewMode as keyof ViewType]['textarea'])
+        setViewModeClassesMarkdown(view[viewMode as keyof ViewType]['markdown'])
 
+        console.log('View Mode Use Effect');
+    }, [viewMode])
 
     const handleSave = async () => {
         try {
@@ -114,7 +112,6 @@ export const Editor = () => {
                     title: 'You shouldn\'t be able to see this :(',
                     type: 'directory'
                 });
-                // console.log("Document written with ID: ", currentDocId);
             } else {
                 console.error("Folder not added.");
             }
@@ -228,7 +225,16 @@ export const Editor = () => {
                             </button>
                         </div>
                     </div>
-                    {view}
+                    <div className='flex flex-row h-5/6 w-full'>
+                        <textarea placeholder='Type here...' className={'editor font-mono border-none focus:outline-none focus:ring-0 h-full resize-none p-2 ' + viewModeClassesTextarea} wrap="hard" value={text} onChange={(e) => {
+                            setText(e.target.value);
+                            const newTitle = e.target.value.split('\n', 1)[0]
+                            setTitle(newTitle.substring(0, 1) === '#' ? newTitle.substring(1).trim() : newTitle.trim());
+                        }}/>
+                        <div className={'h-full overflow-y-scroll ' + viewModeClassesMarkdown}>
+                            <Markdown value={text} gfm/>
+                        </div>
+                    </div>
                     <div className='inline-flex w-full justify-center mt-5'>
                         <button onClick={() => setViewMode('markdown')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'>
                             Markdown
