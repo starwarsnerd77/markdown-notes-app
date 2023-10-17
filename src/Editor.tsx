@@ -7,14 +7,20 @@ import './Editor.css';
 import { NewFolderModal } from './NewFolderModal';
 import { IconFolder, IconNote } from '@tabler/icons-react';
 
-type SavedDocs = {
+type Docs = {
     did: string,
     title: string,
     note: string,
 }
 
-type Folders = {
-    directory: string[]
+interface Folder {
+    name: string,
+    folders: Folder[] | null,
+    docs: Docs | null,
+}
+
+interface Directory {
+    directory: Folder[],
 }
 
 interface ViewItemType {
@@ -34,12 +40,12 @@ export const Editor = () => {
     const [viewModeClassesTextarea, setViewModeClassesTextarea] = useState('w-1/2');
     const [viewModeClassesMarkdown, setViewModeClassesMarkdown] = useState('w-1/2 p-2 border-l-2');
     const [title, setTitle] = useState('Untitled');
-    const [notes, setNotes] = useState<SavedDocs[]>([])
+    const [notes, setNotes] = useState<Docs[]>([])
     const [edit, setEdit] = useState(false);
     const [currentDocId, setCurrentDocId] = useState('');
     const [add, setAdd] = useState(false);
     const [createNewFolder, setCreateNewFolder] = useState(false);
-    const [folders, setFolders] = useState<string[]>([]);
+    const [folders, setFolders] = useState<Directory | null>();
 
     const user = auth.currentUser;
 
@@ -61,8 +67,6 @@ export const Editor = () => {
 
         setViewModeClassesTextarea(view[viewMode as keyof ViewType]['textarea'])
         setViewModeClassesMarkdown(view[viewMode as keyof ViewType]['markdown'])
-
-        console.log('View Mode Use Effect');
     }, [viewMode])
 
     const handleSave = async () => {
@@ -98,6 +102,12 @@ export const Editor = () => {
     }
 
     const addFolder = async (newFolderName: string) => {
+
+        const newFolder: Folder = {
+            name: newFolderName,
+            folders: null,
+            docs: null,
+        }
         try {
             if (user) {
                 await addDoc(collection(db, 'notes - ' + user.uid + '/folders/' + newFolderName), {
@@ -105,13 +115,21 @@ export const Editor = () => {
                     note: '# placeholder',
                     type: 'placeholder'
                 });
-
-                await setDoc(doc(db, 'notes - ' + user.uid, 'folders'), {
-                    directory: [...folders, newFolderName],
-                    note: '# directory',
-                    title: 'You shouldn\'t be able to see this :(',
-                    type: 'directory'
-                });
+                if (folders?.directory) {
+                    await setDoc(doc(db, 'notes - ' + user.uid, 'folders'), {
+                        directory: [...folders?.directory, newFolder],
+                        note: '# directory',
+                        title: 'You shouldn\'t be able to see this :(',
+                        type: 'directory'
+                    });
+                } else {
+                    await setDoc(doc(db, 'notes - ' + user.uid, 'folders'), {
+                        directory: [newFolder],
+                        note: '# directory',
+                        title: 'You shouldn\'t be able to see this :(',
+                        type: 'directory'
+                    });
+                }
             } else {
                 console.error("Folder not added.");
             }
@@ -132,7 +150,7 @@ export const Editor = () => {
         const querySnapshot = await getDocs(q);
 
         querySnapshot.forEach((doc) => {
-            const note: SavedDocs = {
+            const note: Docs = {
                 did: doc.id,
                 title: doc.data().title,
                 note: doc.data().note,
@@ -144,7 +162,7 @@ export const Editor = () => {
     }
 
     const getSavedFolders = async () => {
-        setFolders([]);
+        setFolders(null);
 
         const q = query(
             collection(db, 'notes - ' + user?.uid),
@@ -154,10 +172,20 @@ export const Editor = () => {
         const querySnapshot = await getDocs(q);
 
         querySnapshot.forEach((doc) => {
-            const newDirectory: Folders = {
-                directory: doc.data().directory
+            const newDirectory: Directory = {
+                directory: [],
             }
-            setFolders(newDirectory.directory);
+
+            doc.data().directory.map((folder: string) => {
+                const newFolder: Folder = {
+                    name: folder,
+                    folders: null,
+                    docs: null,
+                }
+
+                newDirectory.directory = [...newDirectory.directory, newFolder];
+            })
+            setFolders(newDirectory);
         })
     }
 
@@ -177,11 +205,11 @@ export const Editor = () => {
             <div className='flex flex-row'>
                 <div hidden={edit} className='w-full h-screen lg:w-1/5 lg:block relative border-r-gray-100 border-r-2'>
                     <h3 className='font-normal mt-3'>Notes</h3>
-                    {folders.map((folder, index) => (
+                    {folders?.directory.map((folder, index) => (
                         <div key={index} className='text-left cursor-pointer '>
                             <div className='w-full p-3 relative overflow-hidden flex'>
                                 <IconFolder />
-                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{folder}</p>
+                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{folder.name}</p>
                             </div>
                             <hr/>
                         </div>
