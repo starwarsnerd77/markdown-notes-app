@@ -3,9 +3,10 @@ import Markdown from 'marked-react';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, query, where, setDoc, doc } from "firebase/firestore"; 
-import './Editor.css';
+import '../styles/Editor.css';
 import { NewFolderModal } from './NewFolderModal';
 import { IconFolder, IconNote } from '@tabler/icons-react';
+import { saveDoc } from '../database/docs';
 
 type Doc = {
     did: string,
@@ -31,71 +32,70 @@ interface ViewType {
 }
 
 export const Editor = () => {
-    const [text, setText] = useState('');
+    const [note, setNote] = useState('');
     const [viewMode, setViewMode] = useState<string>('split');
     const [viewModeClassesTextarea, setViewModeClassesTextarea] = useState('w-1/2');
     const [viewModeClassesMarkdown, setViewModeClassesMarkdown] = useState('w-1/2 p-2 border-l-2');
     const [title, setTitle] = useState('Untitled');
     const [notes, setNotes] = useState<Doc[]>([])
     const [edit, setEdit] = useState(false);
-    const [currentDocId, setCurrentDocId] = useState('');
+    const [docID, setDocID] = useState('');
     const [add, setAdd] = useState(false);
     const [createNewFolder, setCreateNewFolder] = useState(false);
     const [folders, setFolders] = useState<Folder[]>([]);
 
     const user = auth.currentUser;
 
-    useEffect(() => {
-        const view: ViewType = {
-            split: {
-                'textarea': 'w-1/2',
-                'markdown': 'w-1/2 p-2 border-l-2',
-            },
-            markdown: {
-                'textarea': 'w-full',
-                'markdown': 'invisible absolute',
-            },
-            html: {
-                'textarea': 'invisible absolute',
-                'markdown': 'w-full p-2',
-            },
-        }
+    const view: ViewType = {
+        split: {
+            'textarea': 'w-1/2',
+            'markdown': 'w-1/2 p-2 border-l-2',
+        },
+        markdown: {
+            'textarea': 'w-full',
+            'markdown': 'invisible absolute',
+        },
+        html: {
+            'textarea': 'invisible absolute',
+            'markdown': 'w-full p-2',
+        },
+    }
 
+    useEffect(() => {
         setViewModeClassesTextarea(view[viewMode as keyof ViewType]['textarea'])
         setViewModeClassesMarkdown(view[viewMode as keyof ViewType]['markdown'])
     }, [viewMode])
 
-    const handleSave = async () => {
-        try {
-
-            if (currentDocId !== '') {  
-                if (user) {
-                    await setDoc(doc(db, 'notes - ' + user.uid, currentDocId), {
-                        title: title,
-                        note: text,
-                        type: 'note'
-                    });
-                    console.log("Document written with ID: ", currentDocId);
-                } else {
-                    console.error('Document not updated.')
-                }
-            } else {
-                if (user) {
-                    const docRef = await addDoc(collection(db, 'notes - ' + user.uid), {
-                        title: title,
-                        note: text,
-                        type: 'note'
-                    });
-                    console.log("Document written with ID: ", docRef.id);
-                } else {
-                    console.error('Document not added.')
-                }
-            }
-            getSavedDocs();
-        } catch (e) {
-            console.error("Error adding document: ", e);
-        }
-    }
+    // const handleSave = async () => {
+    //     try {
+    //         if (docID !== '') {  
+    //             if (user) {
+    //                 await setDoc(doc(db, 'notes - ' + user.uid, docID), {
+    //                     title: title,
+    //                     note: note,
+    //                     type: 'note'
+    //                 });
+    //                 console.log("Document written with ID: ", docID);
+    //             } else {
+    //                 console.error('Document not updated.')
+    //             }
+    //         } else {
+    //             if (user) {
+    //                 const docRef = await addDoc(collection(db, 'notes - ' + user.uid), {
+    //                     title: title,
+    //                     note: note,
+    //                     type: 'note'
+    //                 });
+    //                 console.log("Document written with ID: ", docRef.id);
+    //             } else {
+    //                 console.error('Document not added.')
+    //             }
+    //         }
+    //         getSavedDocs();
+    //     } catch (e) {
+    //         console.error("Error adding document: ", e);
+    //     }
+    // }
 
     const addFolder = async (newFolderName: string) => {
 
@@ -194,8 +194,7 @@ export const Editor = () => {
                     {folders.map((folder, index) => (
                         <div key={index} className='text-left cursor-pointer '>
                             <div className='w-full p-3 relative overflow-hidden flex'>
-                                <IconFolder />
-                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{folder.name}</p>
+                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconFolder className='inline-block mr-2'/>{folder.name}</p>
                             </div>
                             <hr/>
                         </div>
@@ -203,13 +202,12 @@ export const Editor = () => {
                     {notes.map((note, index) => (
                         <div key={index} onClick={() => {
                             setTitle(note.title);
-                            setText(note.note);
-                            setCurrentDocId(note.did);
+                            setNote(note.note);
+                            setDocID(note.did);
                             setEdit(true);
                         }} className='text-left cursor-pointer'>
-                            <div className='w-full p-3 relative overflow-hidden flex'>
-                                <IconNote />
-                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide ml-2'>{note.title}</p>
+                            <div className='w-full p-3 relative flex'>
+                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconNote className='inline-block mr-2'/>{note.title}</p>
                             </div>
                             <hr/>
                         </div>
@@ -218,7 +216,7 @@ export const Editor = () => {
                     <div hidden={!add} className='flex flex-col text-left w-8/12 absolute bottom-20 right-5 bg-gray-300 rounded-md text-gray-700 font-bold'>
                         <div hidden={!add} onClick={() => {setCreateNewFolder(true); setAdd(false);}} className='flex-grow hover:bg-gray-400 rounded-t-md p-2 hover:cursor-pointer'>Folder</div>
                         <hr hidden={!add} />
-                        <div hidden={!add} onClick={async () => {setTitle('Untitled'); setText(''); setCurrentDocId(''); setEdit(true); setAdd(false);}} className='flex-grow hover:bg-gray-400 rounded-b-md p-2 hover:cursor-pointer'>Document</div>
+                        <div hidden={!add} onClick={async () => {setTitle('Untitled'); setNote(''); setDocID(''); setEdit(true); setAdd(false);}} className='flex-grow hover:bg-gray-400 rounded-b-md p-2 hover:cursor-pointer'>Document</div>
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" onClick={() => setAdd(!add)} className="w-14 h-14 hover:cursor-pointer bg-gray-300 hover:bg-gray-400 stroke-gray-700 rounded-xl float-right absolute bottom-5 right-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -231,7 +229,7 @@ export const Editor = () => {
                         </svg>
 
                         <div className='inline-flex justify-center'>
-                            <button onClick={async () => {handleSave()}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
+                            <button onClick={async () => {saveDoc({docID, title, note})}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
                                 Save
                             </button>
                             <button onClick={() => signOut(auth)} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-r'>
@@ -240,13 +238,13 @@ export const Editor = () => {
                         </div>
                     </div>
                     <div className='flex flex-row h-5/6 w-full'>
-                        <textarea placeholder='Type here...' className={'editor font-mono border-none focus:outline-none focus:ring-0 h-full resize-none p-2 ' + viewModeClassesTextarea} wrap="hard" value={text} onChange={(e) => {
-                            setText(e.target.value);
+                        <textarea placeholder='Type here...' className={'editor font-mono border-none focus:outline-none focus:ring-0 h-full resize-none p-2 ' + viewModeClassesTextarea} wrap="hard" value={note} onChange={(e) => {
+                            setNote(e.target.value);
                             const newTitle = e.target.value.split('\n', 1)[0]
                             setTitle(newTitle.substring(0, 1) === '#' ? newTitle.substring(1).trim() : newTitle.trim());
                         }}/>
                         <div className={'h-full overflow-y-scroll ' + viewModeClassesMarkdown}>
-                            <Markdown value={text} gfm/>
+                            <Markdown value={note} gfm/>
                         </div>
                     </div>
                     <div className='inline-flex w-full justify-center mt-5'>

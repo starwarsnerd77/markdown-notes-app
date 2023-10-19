@@ -1,4 +1,4 @@
-import './App.css';
+import './styles/App.css';
 import { Editor } from './components/Editor';
 import { Signup } from './components/user/Signup';
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
