@@ -1,7 +1,7 @@
 import { createUserWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { useState } from "react"
 import { useNavigate } from "react-router-dom";
-import { auth } from "../lib/firebase";
+import { auth } from "../../../lib/firebase";
 
 export const Signup = () => {
     const [email, setEmail] = useState('');

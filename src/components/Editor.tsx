@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Markdown from 'marked-react';
 import { signOut } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
+import { auth, db } from '../../lib/firebase';
 import { collection, addDoc, getDocs, query, where, setDoc, doc } from "firebase/firestore"; 
 import './Editor.css';
 import { NewFolderModal } from './NewFolderModal';

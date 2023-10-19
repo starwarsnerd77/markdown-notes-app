@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import UserContext, { User } from "../context/user";
+import UserContext, { User } from "../../context/user";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../lib/firebase"
+import { auth } from "../../lib/firebase"
 
 export const Layout = () => {
     const [loggedIn, setLoggedIn] = useState(false);

@@ -1,11 +1,11 @@
 import './App.css';
-import { Editor } from './Editor';
-import { Signup } from './Signup';
+import { Editor } from './components/Editor';
+import { Signup } from './components/user/Signup';
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { Layout } from './Layout';
-import { ErrorPage } from './ErrorPage';
-import { Login } from './Login';
-import { ResetPassword } from './ResetPassword';
+import { Layout } from './components/Layout';
+import { ErrorPage } from './components/ErrorPage';
+import { Login } from './components/user/Login';
+import { ResetPassword } from './components/user/ResetPassword';
 
 const router = createBrowserRouter([
   {
