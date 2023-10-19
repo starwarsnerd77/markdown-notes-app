@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Markdown from 'marked-react';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, setDoc, doc } from "firebase/firestore"; 
+import { collection, addDoc, query, where, setDoc, doc, onSnapshot } from "firebase/firestore"; 
 import '../styles/Editor.css';
 import { NewFolderModal } from './NewFolderModal';
 import { IconFolder, IconNote } from '@tabler/icons-react';
@@ -66,37 +66,6 @@ export const Editor = () => {
         setViewModeClassesMarkdown(view[viewMode as keyof ViewType]['markdown'])
     }, [viewMode])
 
-    // const handleSave = async () => {
-    //     try {
-    //         if (docID !== '') {  
-    //             if (user) {
-    //                 await setDoc(doc(db, 'notes - ' + user.uid, docID), {
-    //                     title: title,
-    //                     note: note,
-    //                     type: 'note'
-    //                 });
-    //                 console.log("Document written with ID: ", docID);
-    //             } else {
-    //                 console.error('Document not updated.')
-    //             }
-    //         } else {
-    //             if (user) {
-    //                 const docRef = await addDoc(collection(db, 'notes - ' + user.uid), {
-    //                     title: title,
-    //                     note: note,
-    //                     type: 'note'
-    //                 });
-    //                 console.log("Document written with ID: ", docRef.id);
-    //             } else {
-    //                 console.error('Document not added.')
-    //             }
-    //         }
-    //         getSavedDocs();
-    //     } catch (e) {
-    //         console.error("Error adding document: ", e);
-    //     }
-    // }
-
     const addFolder = async (newFolderName: string) => {
 
         const newFolder: Folder = {
@@ -129,55 +98,52 @@ export const Editor = () => {
             } else {
                 console.error("Folder not added.");
             }
-            getSavedFolders();
         } catch (e) {
             console.error("Error adding folder: ", e);
         }
     }
 
-    const getSavedDocs = async () => {
-        setNotes([]);
-
+    useEffect(() => {
+        
         const q = query(
             collection(db, 'notes - ' + user?.uid),
             where('type', '==', 'note')
-        );
-            
-        const querySnapshot = await getDocs(q);
+            );
 
-        querySnapshot.forEach((doc) => {
-            const note: Doc = {
-                did: doc.id,
-                title: doc.data().title,
-                note: doc.data().note,
-            };
+        const unsub = onSnapshot(q, (querySnapshot) => {
+            setNotes([]);
 
-            setNotes(notes => [...notes, note]);
+            querySnapshot.forEach((doc) => {
+                const note: Doc = {
+                    did: doc.id,
+                    title: doc.data().title,
+                    note: doc.data().note,
+                };
+    
+                setNotes(notes => [...notes, note]);
+            });
         });
 
-    }
+        return unsub;
+    }, []);
 
-    const getSavedFolders = async () => {
-        setFolders([]);
-
+    useEffect(() => {
         const q = query(
             collection(db, 'notes - ' + user?.uid),
             where('type', '==', 'directory')
         );
 
-        const querySnapshot = await getDocs(q);
+        const unsub = onSnapshot(q, (querySnapshot) => {
+            setFolders([]);
 
-        querySnapshot.forEach((doc) => {
+            querySnapshot.forEach((doc) => {
+                const directory: Folder[] = doc.data().directory;
 
-            const directory: Folder[] = doc.data().directory;
-            
-            setFolders(directory);
+                setFolders(directory);
+            })
         })
-    }
 
-    useEffect(() => {
-        getSavedFolders();
-        getSavedDocs();
+        return unsub;
     }, []);
 
 

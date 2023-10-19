@@ -7,11 +7,11 @@ type SaveDocProps = {
     note: string,
 }
 
-const user = auth.currentUser;
-
 export const saveDoc = async ({docID, title, note}: SaveDocProps) => {
+
+    const user = auth.currentUser;
+    
     if (docID !== '') {
-        // console.log('here');
         await setDoc(doc(db, 'notes - ' + user?.uid, docID), {
             title,
             note,
