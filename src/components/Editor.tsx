@@ -2,22 +2,22 @@ import { useEffect, useState } from 'react';
 import Markdown from 'marked-react';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
-import { collection, addDoc, query, where, setDoc, doc, onSnapshot } from "firebase/firestore"; 
+import { collection, addDoc, query, where, setDoc, doc, onSnapshot, QuerySnapshot } from "firebase/firestore"; 
 import '../styles/Editor.css';
 import { NewFolderModal } from './NewFolderModal';
 import { IconFolder, IconNote } from '@tabler/icons-react';
 import { saveDoc } from '../database/docs';
 
 type Doc = {
-    did: string,
+    docID: string,
     title: string,
     note: string,
+    path: string[],
 }
 
 interface Folder {
-    name: string,
+    title: string,
     folders: Folder[],
-    docs: Doc[],
 }
 
 interface ViewItemType {
@@ -37,12 +37,19 @@ export const Editor = () => {
     const [viewModeClassesTextarea, setViewModeClassesTextarea] = useState('w-1/2');
     const [viewModeClassesMarkdown, setViewModeClassesMarkdown] = useState('w-1/2 p-2 border-l-2');
     const [title, setTitle] = useState('Untitled');
-    const [notes, setNotes] = useState<Doc[]>([])
+    const [notes, setNotes] = useState<Doc[]>([]);
     const [edit, setEdit] = useState(false);
     const [docID, setDocID] = useState('');
     const [add, setAdd] = useState(false);
     const [createNewFolder, setCreateNewFolder] = useState(false);
+    const [path, setPath] = useState<string[]>([]);
+    const root_default: Folder = {
+        title: 'root',
+        folders: [],
+    }
+    const [root, setRoot] = useState<Folder>(root_default);
     const [folders, setFolders] = useState<Folder[]>([]);
+
 
     const user = auth.currentUser;
 
@@ -66,42 +73,29 @@ export const Editor = () => {
         setViewModeClassesMarkdown(view[viewMode as keyof ViewType]['markdown'])
     }, [viewMode])
 
-    const addFolder = async (newFolderName: string) => {
+    useEffect(() => {
+        const q = query(
+            collection(db, 'notes - ' + user?.uid),
+            where('type' , '==', 'directory'),
+        )
 
-        const newFolder: Folder = {
-            name: newFolderName,
-            folders: [],
-            docs: [],
-        }
-        try {
-            if (user) {
-                await addDoc(collection(db, 'notes - ' + user.uid + '/folders/' + newFolderName), {
-                    title: newFolderName,
-                    note: '# placeholder',
-                    type: 'placeholder'
-                });
-                if (folders) {
-                    await setDoc(doc(db, 'notes - ' + user.uid, 'folders'), {
-                        directory: [...folders, newFolder],
-                        note: '# directory',
-                        title: 'You shouldn\'t be able to see this :(',
-                        type: 'directory'
-                    });
-                } else {
-                    await setDoc(doc(db, 'notes - ' + user.uid, 'folders'), {
-                        directory: [newFolder],
-                        note: '# directory',
-                        title: 'You shouldn\'t be able to see this :(',
-                        type: 'directory'
-                    });
+        const unsub = onSnapshot(q, (querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+
+                const new_root = {
+                    title: 'root',
+                    folders: []
                 }
-            } else {
-                console.error("Folder not added.");
-            }
-        } catch (e) {
-            console.error("Error adding folder: ", e);
-        }
-    }
+
+                new_root.folders = doc.data().directory;
+                setRoot(new_root);
+            })
+        });
+
+        displayFolders();
+
+        return unsub;
+    }, [])
 
     useEffect(() => {
         
@@ -115,9 +109,10 @@ export const Editor = () => {
 
             querySnapshot.forEach((doc) => {
                 const note: Doc = {
-                    did: doc.id,
+                    docID: doc.id,
                     title: doc.data().title,
                     note: doc.data().note,
+                    path: doc.data().path,
                 };
     
                 setNotes(notes => [...notes, note]);
@@ -127,31 +122,67 @@ export const Editor = () => {
         return unsub;
     }, []);
 
-    useEffect(() => {
-        const q = query(
-            collection(db, 'notes - ' + user?.uid),
-            where('type', '==', 'directory')
-        );
+    const findFolder = (path_i: number, current: Folder): Folder => {
+        if (path_i >= path.length) {
+            return current;
+        }
 
-        const unsub = onSnapshot(q, (querySnapshot) => {
-            setFolders([]);
+        current.folders.forEach((folder) => {
+            if (folder.title === path.at(path_i)) {
+                return findFolder(path_i + 1, folder);
+            }
+        });
 
-            querySnapshot.forEach((doc) => {
-                const directory: Folder[] = doc.data().directory;
+        return current;
+    }
 
-                setFolders(directory);
-            })
-        })
+    const saveFolder = async (name: string) => {
+        const newFolder: Folder = {
+            title: name,
+            folders: [],
+        }
 
-        return unsub;
-    }, []);
+        const found: Folder = findFolder(0, root);
+
+        const newRoot: Folder = {
+            title: 'found',
+            folders: found.folders.slice()
+        }
+
+        newRoot.folders.push(newFolder);
+
+        await setDoc(doc(db, 'notes - ' + user?.uid, 'folders'), {
+            directory: newRoot.folders,
+            type: 'directory',
+        });
+    }
+
+    const displayFolders = () => {
+        let queue: Folder[] = [...root.folders];
+
+        const new_folders = [];
+
+        while (queue.length > 0) {
+            const current = queue.pop();
+            
+            if (current) {
+                new_folders.push(current);
+    
+                current.folders.forEach((folder) => {
+                    queue.push(folder);
+                });
+            }
+        }
+
+        setFolders(new_folders);
+    }
 
 
     return (
         <>
             <NewFolderModal
                 hidden={!createNewFolder}
-                onSubmit={(name: string) => {addFolder(name)}} 
+                onSubmit={saveFolder} 
                 onClose={() => setCreateNewFolder(false)}
             />
             <div className='flex flex-row'>
@@ -160,7 +191,7 @@ export const Editor = () => {
                     {folders.map((folder, index) => (
                         <div key={index} className='text-left cursor-pointer '>
                             <div className='w-full p-3 relative overflow-hidden flex'>
-                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconFolder className='inline-block mr-2'/>{folder.name}</p>
+                                <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconFolder className='inline-block mr-2'/>{folder.title}</p>
                             </div>
                             <hr/>
                         </div>
@@ -169,8 +200,9 @@ export const Editor = () => {
                         <div key={index} onClick={() => {
                             setTitle(note.title);
                             setNote(note.note);
-                            setDocID(note.did);
+                            setDocID(note.docID);
                             setEdit(true);
+                            setPath(note.path);
                         }} className='text-left cursor-pointer'>
                             <div className='w-full p-3 relative flex'>
                                 <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconNote className='inline-block mr-2'/>{note.title}</p>
@@ -195,7 +227,7 @@ export const Editor = () => {
                         </svg>
 
                         <div className='inline-flex justify-center'>
-                            <button onClick={async () => {saveDoc({docID, title, note})}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
+                            <button onClick={async () => {saveDoc({docID, title, note, path: []})}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
                                 Save
                             </button>
                             <button onClick={() => signOut(auth)} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-r'>
@@ -217,11 +249,11 @@ export const Editor = () => {
                         <button onClick={() => setViewMode('markdown')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'>
                             Markdown
                         </button>
-                        <button onClick={() => setViewMode('html')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4'>
-                            HTML
-                        </button>
-                        <button onClick={() => setViewMode('split')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r'>
+                        <button onClick={() => setViewMode('split')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4'>
                             Split
+                        </button>
+                        <button onClick={() => setViewMode('html')} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r'>
+                            HTML
                         </button>
                     </div>
                 </div>

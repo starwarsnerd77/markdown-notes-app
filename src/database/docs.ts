@@ -5,9 +5,10 @@ type SaveDocProps = {
     docID: string,
     title: string,
     note: string,
+    path: string[],
 }
 
-export const saveDoc = async ({docID, title, note}: SaveDocProps) => {
+export const saveDoc = async ({docID, title, note, path}: SaveDocProps) => {
 
     const user = auth.currentUser;
     
@@ -15,13 +16,15 @@ export const saveDoc = async ({docID, title, note}: SaveDocProps) => {
         await setDoc(doc(db, 'notes - ' + user?.uid, docID), {
             title,
             note,
-            type: 'note'
+            type: 'note',
+            path,
         });
     } else {
         await addDoc(collection(db, 'notes - ' + user?.uid), {
             title,
             note,
-            type: 'note'
+            type: 'note',
+            path,
         });
     }
 }

@@ -35,7 +35,6 @@ export const NewFolderModal = ({ hidden, onSubmit, onClose }: NewFolderModalProp
             <div className="flex flex-col h-fit w-fit bg-white p-4 rounded-lg">
                 <label className="w-fit mb-2">New Folder</label>
                 <input onKeyDown={(e) => {if (e.key === 'Enter') handleSubmit();}} value={folderName} onChange={(e) => setFolderName(e.target.value)} type="text" placeholder="Enter name here..." className="w-96" />
-                {/* {folderName} */}
             </div>
         </div>
     );
