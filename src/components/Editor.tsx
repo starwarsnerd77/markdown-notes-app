@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import Markdown from 'marked-react';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
-import { collection, addDoc, query, where, setDoc, doc, onSnapshot, QuerySnapshot } from "firebase/firestore"; 
+import { collection, query, where, setDoc, doc, onSnapshot } from "firebase/firestore"; 
 import '../styles/Editor.css';
 import { NewFolderModal } from './NewFolderModal';
-import { IconFolder, IconNote } from '@tabler/icons-react';
+import { IconFolder, IconNote, IconPlus } from '@tabler/icons-react';
 import { saveDoc } from '../database/docs';
 
 type Doc = {
@@ -17,6 +17,7 @@ type Doc = {
 
 interface Folder {
     title: string,
+    path: string[]
     folders: Folder[],
 }
 
@@ -45,6 +46,7 @@ export const Editor = () => {
     const [path, setPath] = useState<string[]>([]);
     const root_default: Folder = {
         title: 'root',
+        path: [],
         folders: [],
     }
     const [root, setRoot] = useState<Folder>(root_default);
@@ -84,15 +86,15 @@ export const Editor = () => {
 
                 const new_root = {
                     title: 'root',
+                    path: [],
                     folders: []
                 }
 
                 new_root.folders = doc.data().directory;
                 setRoot(new_root);
+
             })
         });
-
-        displayFolders();
 
         return unsub;
     }, [])
@@ -122,61 +124,63 @@ export const Editor = () => {
         return unsub;
     }, []);
 
-    const findFolder = (path_i: number, current: Folder): Folder => {
-        if (path_i >= path.length) {
-            return current;
-        }
-
-        current.folders.forEach((folder) => {
-            if (folder.title === path.at(path_i)) {
-                return findFolder(path_i + 1, folder);
-            }
-        });
-
-        return current;
-    }
-
-    const saveFolder = async (name: string) => {
-        const newFolder: Folder = {
-            title: name,
-            folders: [],
-        }
-
-        const found: Folder = findFolder(0, root);
-
-        const newRoot: Folder = {
-            title: 'found',
-            folders: found.folders.slice()
-        }
-
-        newRoot.folders.push(newFolder);
-
-        await setDoc(doc(db, 'notes - ' + user?.uid, 'folders'), {
-            directory: newRoot.folders,
-            type: 'directory',
-        });
-    }
-
-    const displayFolders = () => {
+    useEffect(() => {
         let queue: Folder[] = [...root.folders];
 
         const new_folders = [];
 
         while (queue.length > 0) {
-            const current = queue.pop();
+            const current = queue.splice(0, 1)[0];
             
             if (current) {
                 new_folders.push(current);
     
                 current.folders.forEach((folder) => {
-                    queue.push(folder);
+                    queue.splice(0, 0, folder);
                 });
+
             }
         }
 
         setFolders(new_folders);
+    }, [notes, root]);
+
+    const findFolder = (path_i: number, current: Folder): Folder => {
+        if (path_i >= path.length) {
+            return current;
+        }
+
+        let found: Folder | null = null;
+
+        current.folders.forEach((folder) => {
+
+            if (folder.title === path.at(path_i)) {
+                found = findFolder(path_i + 1, folder);
+            }
+
+        });
+
+        return found ?? current;
     }
 
+    const saveFolder = async (name: string) => {
+        const newFolder: Folder = {
+            title: name,
+            path: path.slice(),
+            folders: [],
+        }
+        
+        newFolder.path.push(name);
+        
+        const found: Folder = findFolder(0, root);
+
+        found.folders.push(newFolder);
+
+        await setDoc(doc(db, 'notes - ' + user?.uid, 'folders'), {
+            directory: root.folders,
+            type: 'directory',
+        });
+    }
 
     return (
         <>
@@ -189,7 +193,7 @@ export const Editor = () => {
                 <div hidden={edit} className='w-full h-screen lg:w-1/5 lg:block relative border-r-gray-100 border-r-2'>
                     <h3 className='font-normal mt-3'>Notes</h3>
                     {folders.map((folder, index) => (
-                        <div key={index} className='text-left cursor-pointer '>
+                        <div key={index} onClick={() => {setPath(folder.path); console.log(path);}} className='text-left cursor-pointer '>
                             <div className='w-full p-3 relative overflow-hidden flex'>
                                 <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconFolder className='inline-block mr-2'/>{folder.title}</p>
                             </div>
@@ -216,9 +220,7 @@ export const Editor = () => {
                         <hr hidden={!add} />
                         <div hidden={!add} onClick={async () => {setTitle('Untitled'); setNote(''); setDocID(''); setEdit(true); setAdd(false);}} className='flex-grow hover:bg-gray-400 rounded-b-md p-2 hover:cursor-pointer'>Document</div>
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" onClick={() => setAdd(!add)} className="w-14 h-14 hover:cursor-pointer bg-gray-300 hover:bg-gray-400 stroke-gray-700 rounded-xl float-right absolute bottom-5 right-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
+                    <IconPlus onClick={() => setAdd(!add)} className="w-14 h-14 hover:cursor-pointer bg-gray-300 hover:bg-gray-400 stroke-gray-700 rounded-xl float-right absolute bottom-5 right-5"/>
                 </div>
                 <div className={'m-0 lg:flex flex-col content-start text-left h-screen w-full justify-center' + (!edit ? ' hidden' : '')}>
                     <div className='flex flex-row flex-wrap lg:justify-end justify-between mb-2 items-center'>
@@ -227,7 +229,7 @@ export const Editor = () => {
                         </svg>
 
                         <div className='inline-flex justify-center'>
-                            <button onClick={async () => {saveDoc({docID, title, note, path: []})}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
+                            <button onClick={async () => {saveDoc({docID, title, note, path: path})}} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-l'>
                                 Save
                             </button>
                             <button onClick={() => signOut(auth)} className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 w-fit rounded-r'>
