@@ -193,8 +193,12 @@ export const Editor = () => {
                 <div hidden={edit} className='w-full h-screen lg:w-1/5 lg:block relative border-r-gray-100 border-r-2'>
                     <h3 className='font-normal mt-3'>Notes</h3>
                     {folders.map((folder, index) => (
-                        <div key={index} onClick={() => {setPath(folder.path); console.log(path);}} className='text-left cursor-pointer '>
-                            <div className='w-full p-3 relative overflow-hidden flex'>
+                        <div key={index} onClick={() => setPath(folder.path)} className='text-left cursor-pointer'>
+                            <div 
+                                className={`w-full relative overflow-hidden flex py-3 pr-3`}
+                                style={{
+                                    paddingLeft: `${((folder.path.length - 1) * .75) + .75}rem`
+                                }}>
                                 <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconFolder className='inline-block mr-2'/>{folder.title}</p>
                             </div>
                             <hr/>
