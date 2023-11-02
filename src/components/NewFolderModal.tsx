@@ -16,19 +16,20 @@ export const NewFolderModal = ({ hidden, onSubmit, onClose }: NewFolderModalProp
         onClose();
     }
 
-    const closeOnEnterOrEscapeKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            setFolderName('');
-            onClose();
-        }
-    }
-
+    
     useEffect(() => {
+        const closeOnEnterOrEscapeKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setFolderName('');
+                onClose();
+            }
+        }
+        
         document.body.addEventListener('keydown', closeOnEnterOrEscapeKeyDown)
         return function cleanup() {
             document.body.removeEventListener('keydown', closeOnEnterOrEscapeKeyDown);
         }
-    }, []);
+    }, [onClose]);
 
     return (
         <div className={"h-full w-full absolute flex justify-center items-center align-middle z-50 bg-black bg-opacity-60 text-black " + (hidden ? 'hidden' : '')}>

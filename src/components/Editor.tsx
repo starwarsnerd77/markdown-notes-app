@@ -55,22 +55,23 @@ export const Editor = () => {
 
     const user = auth.currentUser;
 
-    const view: ViewType = {
-        split: {
-            'textarea': 'w-1/2',
-            'markdown': 'w-1/2 p-2 border-l-2',
-        },
-        markdown: {
-            'textarea': 'w-full',
-            'markdown': 'invisible absolute',
-        },
-        html: {
-            'textarea': 'invisible absolute',
-            'markdown': 'w-full p-2',
-        },
-    }
-
+    
     useEffect(() => {
+        const view: ViewType = {
+            split: {
+                'textarea': 'w-1/2',
+                'markdown': 'w-1/2 p-2 border-l-2',
+            },
+            markdown: {
+                'textarea': 'w-full',
+                'markdown': 'invisible absolute',
+            },
+            html: {
+                'textarea': 'invisible absolute',
+                'markdown': 'w-full p-2',
+            },
+        }
+
         setViewModeClassesTextarea(view[viewMode as keyof ViewType]['textarea'])
         setViewModeClassesMarkdown(view[viewMode as keyof ViewType]['markdown'])
     }, [viewMode])
@@ -97,7 +98,7 @@ export const Editor = () => {
         });
 
         return unsub;
-    }, [])
+    }, [user?.uid])
 
     useEffect(() => {
         
@@ -122,10 +123,10 @@ export const Editor = () => {
         });
 
         return unsub;
-    }, []);
+    }, [user?.uid]);
 
     useEffect(() => {
-        let queue: Folder[] = [...root.folders];
+        const queue: Folder[] = [...root.folders];
 
         const new_folders = [];
 
