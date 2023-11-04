@@ -107,7 +107,7 @@ export const Editor = () => {
                     {docsAndFolders.map((item, index) => {
                         if (isFolder(item)) {
                             return (
-                                <div key={index} onClick={() => setPath(item.path)} className='text-left cursor-pointer'>
+                                <div key={index} onClick={() => setPath([...item.path, item.title])} className='text-left cursor-pointer'>
                                     <div 
                                         className='w-full relative flex py-3 pr-3'
                                         style={{
@@ -127,7 +127,12 @@ export const Editor = () => {
                                     setEdit(true);
                                     setPath(item.path);
                                 }} className='text-left cursor-pointer'>
-                                    <div className='w-full p-3 relative flex'>
+                                    <div 
+                                        className='w-full relative flex py-3 pr-3'
+                                        style={{
+                                            paddingLeft: `${((item.path.length) * .75) + .75}rem`
+                                        }}
+                                        >
                                         <p className='whitespace-nowrap overflow-x-auto scrollbar-hide'><IconNote className='inline-block mr-2'/>{item.title}</p>
                                     </div>
                                     <hr/>
